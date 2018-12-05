@@ -1,0 +1,675 @@
+<div class="container-fluid fadeIn fast">   
+    <div class="row" [style.min-height.vh]="100" >
+        <div class="col-12 align-self-start">
+            
+            <!-- MENU DE SESION -->
+            <div class="row">
+                <div class="col-12 p-0">
+                    <app-navbar (enviarUserActive)="session($event)" ></app-navbar>
+                </div>
+            </div>
+            
+            <!-- HEADER CONTENIDO BASICO -->
+
+            <div class="row fast fadeIn text-light" style="background-color: #263238; " > 
+
+                <!-- <div class="col-3 bg-secondary"></div> -->
+                <div class=" col-12 pt-2 text-center position-relative"  >
+                    <h1 class="m-0 universidad-carabobo" > {{ institucion_activa.nombre }} </h1>
+                    
+                    <p class="mb-2">{{ institucion_activa.tipo }} <span class="text-muted">|</span> {{ institucion_activa.rif }} </p>
+                    
+                    <h5 class="mb-0 text-primary">Línea Base Energética: 
+                        <span class="text-info">{{ lbe_total | number:'1.0-2'}} <small class="">kWh<span class="text-secondary">/</span>m<sup>2</sup></small></span> </h5>
+                    
+
+                    <div class="d-flex justify-content-center ">
+                        <p class="m-0"> <strong>Área Útil:</strong> <span class="text-success" >{{ area_util_total }} m<sup>2</sup></span> </p>                        
+                        <p class="mx-2 "><strong>Área Bruta:</strong> <span class="text-success">{{ area_brutal_total }} m<sup>2</sup></span></p>
+                    </div> 
+
+                </div>
+            </div>
+
+            <!-- BODY -->
+            <div class="row ">
+
+                <!-- SIDEBAR: DEPENDENCIAS -->
+                <div class="col-3 fast fadeIn border-right   py-4 px-0"  style="background-color: whitesmoke;" >
+                    <div class="px-4" >
+                        <h3 class="text-center mt-4" >Dependencias</h3>
+                        <hr class="mt-0 px">
+                    </div>
+
+                    <div class="list-group">
+                        <a  *ngFor="let dependence of lista_dependencias"                           
+                            (click)="verDependencia(dependence._id)" 
+                            [ngClass]="{'selected-dep': dependence.nombre===dependencia_activa.nombre }"
+                            class=" list-group-item border-right-0 border-left-0 dep bg-light 
+                                    list-group-item-action  rounded-0 cursor">
+                                     <i  class="fas fa-caret-right"></i> {{dependence.nombre}}
+                        </a>
+                       
+                        <a  *ngIf="userActive"
+                            (click)="open_agregar_dependencia(addNewDependenciaTeplate)"
+
+                            class=" list-group-item cursor border-right-0 border-left-0
+                                    rounded-0 
+                                    text-center                                  
+                        
+                                    text-info
+                                    list-group-item-action"> <i class="fas fa-plus    "></i>  Agregar Dependencia </a>
+                    </div>                   
+
+                </div>
+                
+                <!-- CONTENIDO PRINCIPAL -->
+                <div class="col-9 pt-4 px-0 animated fadeIn">
+
+                    <div class=" px-4" >
+                        <h3 class="text-center lighter mt-3 h1"> {{ dependencia_activa.nombre }} </h3>
+                        <br>
+                        <nav aria-label="breadcrumb" class=" d-flex justify-content-center align-items-baseline">
+                            <ol class="breadcrumb p-0   bg-transparent ">
+                                <li class="breadcrumb-item" (click)="ir(facturdo)" ><a>Facturado</a></li>
+                                <li class="breadcrumb-item" (click)="ir(censodecarga)" > <a>Censo de Carga</a></li>
+                                <li class="breadcrumb-item" (click)="ir(ciclodecarga)" ><a>Ciclos de Carga</a></li>
+                                <li class="breadcrumb-item" (click)="ir(lbe)"><a>LBE</a></li>
+                                <li class="breadcrumb-item" (click)="ir(plandeahorro)"><a>Plan de Ahorro</a></li>
+                            </ol>
+                        </nav>                        
+                    </div>
+                    <div class="px-5" ><hr class="mt-0"></div>
+                    
+                   
+                    <!-- FACTURADO -->
+                    <div class="p-3" #facturdo >
+                        <div class="d-flex align-items-center  px-5 " >
+
+                            <h1 class="text-secondary  text-center mx-auto mb-0" >Facturado</h1>                            
+
+                            <div *ngIf="lista_dependencias.length>0 && userActive " (click)="editar_factura = !editar_factura" 
+                                    class="actionEdit cursor">
+                                <span class="mr-2 lead">
+                                    <span class="animated fadeIn" *ngIf="editar_factura">on</span>
+                                    <span class="animated fadeIn" *ngIf="!editar_factura" > off</span>
+                                </span> 
+                                <i class="fas fa-edit "  ></i> 
+                            </div> 
+                        </div>
+                        
+                        <div class="d-flex  px-5 mb-2 "  >
+                            <p class="invisible">A</p>
+                            <p class=" m-0 ml-auto d-flex cursor align-items-center animated fadeIn" *ngIf="editar_factura && userActive">
+                                <button 
+                                    (click)="open_agregar_factura(addfacturaTeplate)"
+                                    type="button" class=" btn  btn-outline-info rounded-0" >Agregar Factura</button>
+                            </p>
+                        </div>
+                        
+                        
+                        <div class="d-flex justify-content-center px-5">
+                            <table class="table">
+                                <thead class="text-center">
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Kwh</th>
+                                        <th>KVA</th>
+                                        <th>Tarifa</th>
+                                        <th>Monto</th>
+                                        <th>N°Factura</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let factura of dependencia_activa.facturado; let i = index;"                                     
+                                        class="text-center lighter">
+
+                                        <td class="text-capitalize" >
+                                            {{ factura.fecha | date:'MMMM, yyyy' }}
+                                        </td>
+                                        <td>{{ factura.kwh }}</td>
+                                        <td>{{ factura.kva }}</td>
+                                        <td>{{ factura.tarifa }}</td>
+                                        <td class="h6" > {{ factura.monto }} </td>
+                                        <td>{{ factura.numero_factura }}</td>
+                                       
+                                        <td class="px-0 cursor" >
+                                            <div *ngIf="editar_factura && userActive" 
+                                                (click)="open_confirm_delete_factura(confirmDeleteFactura,i)"
+                                                class="animated fadeIn p-0" >
+                                                <i class="fas fa-times drop"></i>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <ul class="list-inline d-flex justify-content-center lead">
+                            <li class="list-inline-item"> {{ dependencia_activa.compania_electrica }} </li>
+                            <li class="list-inline-item mx-3">{{ dependencia_activa.numero_medidor }}</li>
+                            <li class="list-inline-item">{{ dependencia_activa.nic }}</li>
+                        </ul>
+                        
+
+                    </div>
+
+                    <br>
+                    
+                    <!-- CENSO DE CARGA -->
+                    <div class="py-3 bg-light" #censodecarga >
+                        <br>
+
+
+                        <div class="d-flex align-items-center justify-content-between px-5 " >
+
+                            <span class="invisible" >******</span>
+
+                            <h1 class="text-secondary  mb-0" >Censo de Carga</h1>  
+
+
+                            <a *ngIf="lista_dependencias.length>0 && userActive" class="cursor actionEdit routerLink" 
+                                [routerLink]="['/censo', dependencia_activa._id]" >
+
+                                <span class="mr-2 lead">
+                                    <span class="animated fadeIn" >Editar</span>                                    
+                                </span> 
+                                <i class="fas fa-edit "  ></i> 
+
+                            </a> 
+
+                            <span *ngIf="lista_dependencias.length===0 || !userActive" class="invisible" >******</span>
+                        </div>
+
+                        <br>
+                        <div class=" px-3">
+                            <table class="table border-bottom">                        
+                                <thead>        
+                                    <tr class="text-center">
+                                        <th scope="col">#</th>                                        
+                                        <th class="text-left" scope="col">CARGA</th>
+                                        <th scope="col">N°</th>
+                                        <th scope="col">PW</th>
+                                        <th scope="col">FD </th>
+                                        <th scope="col">HD</th>
+                                        <th scope="col">DS</th>
+                                        <th scope="col">HS</th>
+                                        <th scope="col">CS</th>
+                                    </tr>    
+                                </thead>
+                        
+                                <tbody class="small">                        
+                                    <tr *ngFor="let item of dependencia_activa.censo; let i = index;" class="text-center" >                        
+                                        <td> {{ i+1 }} </td>
+                                        <td class="text-left"> {{ item.nombre }} </td>
+                                        <td> {{ item.numero }} </td>
+                                        <td> {{ item.potencia }} </td>
+                                        <td> {{ item.fd }} </td>
+                                        <td> {{ item.horasDia }} </td>
+                                        <td> {{ item.diaSemana }} </td>
+                                        <td> {{ item.horasDia * item.diaSemana | number:'1.0-3'}} </td>
+                                        <td> {{ item.numero * item.fd * item.horasDia * item.diaSemana * item.potencia | number:'1.0-3'}} </td>                                        
+                                    </tr>                                
+                                </tbody>                                
+                            </table>
+
+                            <br>
+                            
+                            <div class="row" >
+                                <div class="col-6 small row leyend" >
+                                    <div class="col-6 ">
+                                        <p><strong>N°</strong> : Numero de Cargas </p>
+                                        <p><strong>PW</strong> : Potencia en Watios </p>
+                                        <p><strong>FD</strong> : Factor de Demanda </p>
+                                        <p><strong>HD</strong> : Horas de Uso Diario </p>
+                                    </div>
+                                    <div class="col-6">
+                                        <p><strong>DS</strong> : Dias de Uso a la Semana </p>
+                                        <p><strong>HS</strong> : Horas de Uso Semanal </p>
+                                        <p><strong>CS</strong> : Consumo Semanal </p>
+                                    </div>
+                                </div>
+                                <div class="col-6 leyend small pr-0 border-left " >
+
+                                    <div class="d-flex">
+                                        <p class="mr-auto" >Total de Cargas Conectadas: </p>
+                                        <p> <strong> {{ total_cargas_conectadas }} </strong>W </p>
+                                    </div>
+                                    <div class="d-flex">
+                                        <p class="mr-auto" >Total Wh por Semana: </p>
+                                        <p> <strong> {{ total_wh_por_semanas | number:'1.0-3' }}  </strong>W </p>
+                                    </div>
+                                    <div class="d-flex">
+                                        <p class="mr-auto" >Total Wh por mes: </p>
+                                        <p> <strong> {{ total_wh_por_semanas * 4.3 | number:'1.0-3' }} </strong>W </p>
+                                    </div>
+                                    <div class="d-flex">
+                                        <p class="mr-auto" >Total Kwh por mes: </p>
+                                        <p> <strong>{{( total_wh_por_semanas * 4.3)/1000 | number:'1.0-3' }} </strong>Kwh </p>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- CICLOS DE CARGA -->
+                    <div class="py-3 " #ciclodecarga >
+                        <br>
+
+                        <div class="d-flex align-items-center justify-content-between px-5 " >
+                            <span class="invisible" >******</span>
+
+                            <h1 class="text-secondary  mb-0" >Ciclos de Carga</h1>                            
+
+                            <div *ngIf="lista_dependencias.length>0 && userActive" class=" actionEdit cursor">
+                                <a *ngIf="lista_dependencias.length>0 && userActive" class="cursor actionEdit routerLink" [routerLink]="['/ciclos', dependencia_activa._id]" >
+                                    <span class="mr-2 lead">
+                                        <span class="animated fadeIn" >Editar</span>                                    
+                                    </span> 
+                                </a>
+                                <i class="fas fa-edit "  ></i> 
+                            </div> 
+                            <span *ngIf="lista_dependencias.length===0 || !userActive" class="invisible" >******</span>
+                        </div>
+
+                        <br>
+
+                        <div class="d-flex justify-content-center">
+                            <div class="w-75">
+                                <app-lineas 
+                                    [lineChartData]="lineaCharData"
+                                    [lineChartLabels]="lineChartLabels">
+                                </app-lineas>
+                            </div>   
+                        </div>
+
+                 
+                       
+                    </div>
+
+                    <!-- LINEA BASE ENERGETICA E INDIADORES -->
+                    <div class="py-3 bg-light" #lbe >
+                        
+                        <br>
+
+                        <div class="d-flex align-items-baseline justify-content-center px-5 " > 
+
+                            <h1 class="text-secondary  mb-0" >Linea de Base Energética</h1>
+                        </div>
+                        
+                        <div class="px-5 mt-3 text-center">
+                            <span class="lead"> <strong>Área Útil</strong>: {{dependencia_activa.area_util}} m<sup>2</sup> </span>                        
+                            <span class="ml-3 lead"><strong>Área Bruta</strong>: {{dependencia_activa.area_bruta}} m<sup>2</sup></span>
+                        </div>                   
+
+                        <br>
+                        
+                        <div>
+                            <div style="display: block">
+                                <canvas baseChart
+                                        [datasets]="barChartData"
+                                        [labels]="barChartLabels"
+                                        [options]="barChartOptions"
+                                        [legend]="barChartLegend"
+                                        [chartType]="barChartType"
+                                        (chartHover)="chartHovered($event)"
+                                        (chartClick)="chartClicked($event)">
+                                </canvas>
+                            </div>                        
+                        </div>
+                        
+                    </div>
+
+                    <div class="py-3 " #plandeahorro  >
+                        <br>
+                        <div class="d-flex align-items-center justify-content-between px-5 " >
+                            <span class="invisible" >******</span>
+
+                            <h1 class="text-secondary  mb-0" >Plan de Ahorro</h1>                            
+
+                            <a *ngIf="(lista_dependencias.length>0) && (dependencia_activa.censo.length > 0) && userActive" 
+                                class="cursor actionEdit routerLink" [routerLink]="['/plan', dependencia_activa._id]" >
+                                <span class="mr-2 lead">
+                                    <span class="animated fadeIn" >Editar</span>                                    
+                                </span> 
+                                <i class="fas fa-edit "  ></i> 
+                            </a> 
+                            <span *ngIf="(lista_dependencias.length===0)||(dependencia_activa.censo.length === 0) || !userActive" class="invisible" >******</span>
+                        </div>                        
+                        <br>
+                        
+                        <div class=" px-3">
+                            <table class="table border-bottom">                        
+                                <thead>        
+                                    <tr class="text-center">
+                                        <th scope="col">#</th>                                        
+                                        <th class="text-left" scope="col">CARGA</th>
+                                        <th scope="col">N°</th>
+                                        <th scope="col">PW</th>
+                                        <th scope="col">FD </th>
+                                        <th scope="col">HD</th>
+                                        <th scope="col">DS</th>
+                                        <th scope="col">HS</th>
+                                        <th scope="col">CS</th>
+                                    </tr>    
+                                </thead>
+                        
+                                <tbody class="small">                        
+                                    <tr *ngFor="let item of dependencia_activa.plan; let i = index;" class="text-center" >                        
+                                        <td> {{ i+1 }} </td>
+                                        <td class="text-left"> {{ item.nombre }} </td>
+                                        <td> {{ item.numero }} </td>
+                                        <td> {{ item.potencia }} </td>
+                                        <td> {{ item.fd }} </td>
+                                        <td> {{ item.horasDia }} </td>
+                                        <td> {{ item.diaSemana }} </td>
+                                        <td> {{ item.horasDia * item.diaSemana | number:'1.0-3' }} </td>
+                                        <td> {{ item.numero * item.fd * item.horasDia * item.diaSemana * item.potencia | number:'1.0-3' }} </td>                                        
+                                    </tr>                                
+                                </tbody>                                
+                            </table>
+
+                            <br>
+                            
+                            <div class="row" >
+                                <div class="col-6 small row leyend" >
+                                    <div class="col-6 ">
+                                        <p><strong>N°</strong> : Numero de Cargas </p>
+                                        <p><strong>PW</strong> : Potencia en Watios </p>
+                                        <p><strong>FD</strong> : Factor de Demanda </p>
+                                        <p><strong>HD</strong> : Horas de Uso Diario </p>
+                                    </div>
+                                    <div class="col-6">
+                                        <p><strong>DS</strong> : Dias de Uso a la Semana </p>
+                                        <p><strong>HS</strong> : Horas de Uso Semanal </p>
+                                        <p><strong>CS</strong> : Consumo Semanal </p>
+                                    </div>
+                                </div>
+                                <div class="col-6 leyend small pr-0 border-left " >
+
+                                    <div class="d-flex">
+                                        <p class="mr-auto" >Total de Cargas Conectadas: </p>
+                                        <p> <strong> {{ total_cargas_conectadas_plan }} </strong>W </p>
+                                    </div>
+                                    <div class="d-flex">
+                                        <p class="mr-auto" >Total Wh por Semana: </p>
+                                        <p> <strong> {{ total_wh_por_semanas_plan | number:'1.0-3' }}  </strong>W </p>
+                                    </div>
+                                    <div class="d-flex">
+                                        <p class="mr-auto" >Total Wh por mes: </p>
+                                        <p> <strong> {{ total_wh_por_semanas_plan * 4.3 | number:'1.0-3' }} </strong>W </p>
+                                    </div>
+                                    <div class="d-flex">
+                                        <p class="mr-auto" >Total Kwh por mes: </p>
+                                        <p> <strong>{{( total_wh_por_semanas_plan * 4.3)/1000 | number:'1.0-3' }} </strong>Kwh </p>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                        
+                    </div>
+
+                    <hr class="mb-0">
+
+                    <div *ngIf="lista_dependencias.length>0 && userActive " class="bg-light py-2 d-flex px-3">
+                        <button 
+                        class="ml-auto my-3 btn btn-sm btn-link text-danger"
+                        (click)="open_confirm_delete_dependencia(confirmDeleteDependencia)" >
+                        Eliminar Dependencia <i class="fas fa-trash    "></i> </button>
+                    </div>
+                  
+                </div>
+            </div>
+
+                  
+            
+        </div>
+        <!-- <div id="up" > <i class="fas fa-arrow-alt-circle-up"></i> </div> -->
+        <footer class="col-12 align-self-end bg-dark">  
+            <p class="text-light text-center p-1 mb-0">
+                Manuel Pinto <i class="far fa-copyright"></i> 2018
+            </p> 
+        </footer>
+
+
+    </div>        
+</div>
+
+
+
+<ng-template #addNewDependenciaTeplate let-c="close" let-d="dismiss">
+
+    <div class="modal-header border-0 pb-0">
+        <h4 class="modal-title">Agregar Dependencia</h4>
+        <button type="button" class="close" aria-label="Close" (click)="d('Cross click')">
+        <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    
+    <div class="pl-3 pr-5 m-0">
+        <hr class="mt-1">
+    </div>
+        
+    <div class="modal-body">
+        <form [formGroup]="fomulario_nueva_dependencia" (ngSubmit)="submitDependencia()" ngNativeValidate >
+
+           
+            <h6  class="text-uppercase text-center "><strong class="text-info" >Dependencia</strong></h6>
+            <div class="form-row">
+                
+                <div class="form-group col-12">
+                    <label for="area_util">Nombre</label>
+                    <input type="text" formControlName="nombre" class="form-control" 
+                            placeholder="Nombre" required>
+                </div>    
+                
+                <div class="form-group col-6">
+                    <label for="area_util">Área Útil (m<sup>2</sup> ) </label>
+                    <input type="number" formControlName="area_util" class="form-control" 
+                            placeholder="Área Útil" min="0" required>
+                </div>
+                <div class="form-group col-6">
+                    <label for="area_bruta">Área Bruta (m<sup>2</sup> ) </label>
+                    <input type="number" formControlName="area_bruta" class="form-control" 
+                            placeholder="Área Bruta" min="0" required>
+                </div>
+                
+                
+            </div>
+    
+            <br>
+    
+            <h6 class="text-center text-uppercase"><strong class="text-info" >Compañía de Servicio Eléctrico</strong></h6>
+            <div class="form-row">
+                
+                <div class="form-group col-12 ">
+                    <label for="nic">Compañia Eléctrica</label>
+                    <input type="text" formControlName="compania_electrica" class="form-control" 
+                            placeholder="Nombre" required>
+                </div>
+                
+                <div class="form-group col-6">
+                    <label for="nic">Número de NIC</label>
+                    <input type="text" formControlName="nic" class="form-control" 
+                            placeholder="Nic" required>
+                </div>
+                <div class="form-group col-6">
+                    <label for="numero_medidor">Número de Medidor</label>
+                    <input type="text" formControlName="numero_medidor" class="form-control " 
+                            placeholder="Número de Medidor" required>
+                </div>
+            
+                
+            </div>
+            
+            <br>
+
+            
+            <h6 class="text-uppercase text-center"><strong class="text-info" >Indicadores de referencia</strong></h6>
+            <div class="form-row" formArrayName="indicadores_lbe" id="lbe-indicadores" >
+                <div class="form-group col-3">
+                    <label for="nic">Iluminación</label>
+                    <input type="number" class="form-control" min="0" required formControlName="0" placeholder="0">
+                </div>
+                <div class="form-group col-3">
+                    <label for="nic">Climatización</label>
+                    <input type="number" class="form-control" min="0" required formControlName="1" placeholder="0">
+                </div>
+                <div class="form-group col-3">
+                    <label for="nic">Tecnología</label>
+                    <input type="number" class="form-control" min="0" required formControlName="2" placeholder="0">
+                </div>
+                <div class="form-group col-3">
+                    <label for="nic">Laboratorio</label>
+                    <input type="number" class="form-control" min="0" required formControlName="3" placeholder="0">
+                </div>
+                <div class="form-group col-3">
+                    <label for="nic">Elevación</label>
+                    <input type="number" class="form-control" min="0" required formControlName="4" placeholder="0">
+                </div>
+                <div class="form-group col-3">
+                    <label for="nic">Cocina</label>
+                    <input type="number" class="form-control" min="0" required formControlName="5" placeholder="0">
+                </div>
+                <div class="form-group col-3">
+                    <label for="nic">Otros</label>
+                    <input type="number" class="form-control" min="0" required formControlName="6" placeholder="0">
+                </div>
+            </div>
+
+            <br>
+            
+            <div class="d-flex justify-content-end pt-2">
+                <div>
+                    <button type="button" (click)="d('Cross click')" class="btn btn-sm rounded-0 btn-outline-secondary">CANCELAR</button>
+                    <button type="submit" class="btn btn-sm btn-info rounded-0 ">AGREGAR DEPENDENCIA</button>
+                </div>
+            </div>                 
+
+        </form>
+    </div>
+ 
+</ng-template>
+
+
+<ng-template #addfacturaTeplate let-c="close" let-d="dismiss">
+
+    <div class="modal-header border-0 pb-0">
+        <h4 class="modal-title">Agregar Factura</h4>
+        <button type="button" class="close" aria-label="Close" (click)="d('Cross click')">
+        <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    
+    <div class="pl-3 pr-5 m-0">
+        <hr class="mt-1">
+    </div>
+
+    <div class="modal-body">
+        <form [formGroup]="fomulario_agregar_factura" (ngSubmit)="submitFactura()" ngNativeValidate >
+           
+            <div class="form-group">
+                <label for="fecha">Fecha</label>
+                <input type="date" formControlName="fecha" class="form-control" 
+                        placeholder="Fecha" required>
+            </div>
+
+            <div class="form-group">
+                <label for="numero_factura">Numero de  Factura</label>
+                <input type="text" formControlName="numero_factura" class="form-control" 
+                        placeholder="N° de Factura" required>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group col-6">
+                    <label for="kwh">kwh</label>
+                    <input type="number" formControlName="kwh" class="form-control" 
+                            placeholder="kwh" min="0" required>
+                </div>
+                
+                <div class="form-group col-6">
+                    <label for="kva">kva</label>
+                    <input type="number" formControlName="kva" class="form-control" 
+                            placeholder="kva" min="0" required>
+                </div>
+    
+                <div class="form-group col-6">
+                    <label for="tarifa">Tarifa</label>
+                    <input type="number" formControlName="tarifa" class="form-control" 
+
+                            placeholder="Tarifa" min="0" max="1" step="0.001" 
+                            oninput="setCustomValidity('')"
+                            oninvalid="setCustomValidity('El valor debe estar comprendido entre 0 y 1')"
+                            required>
+
+                </div>
+    
+                <div class="form-group col-6">
+                    <label for="monto">Monto  </label>
+                    <input type="number" formControlName="monto" class="form-control" 
+                            placeholder="Monto" min="0" step="0.001" required>
+                </div>
+            </div>
+
+
+            <div class="d-flex justify-content-end pt-4">
+                <div>
+                    <button type="button" (click)="d('Cross click')" class="btn btn-sm rounded-0 btn-outline-secondary">CANCELAR</button>
+                    <button type="submit" class="btn btn-sm btn-info rounded-0 ">GUARDAR FACTURA</button>
+                </div>
+            </div>                 
+
+        </form>
+    </div>
+ 
+</ng-template>
+
+<ng-template #confirmDeleteFactura let-c="close" let-d="dismiss">
+
+    <div class="modal-header py-2">
+        <h4 class="modal-title lead">Mensaje de confirmación <i class="fas fa-exclamation-circle text-secondary  "></i></h4>
+        <button type="button" class="close" aria-label="Close" (click)="d('Cross click')">
+        <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <div class="modal-body py-3">
+        <div class="d-flex justify-content-end">
+            <div>
+                <button type="button" (click)="d('Cross click')" 
+                    class="btn btn-sm btn-outline-secondary rounded-0">CANCELAR</button>
+                <button type="submit" (click)="eliminarFactura()" 
+                    class="btn btn-sm btn-outline-danger rounded-0 ">ELIMINAR FACTURA</button>
+            </div>
+        </div>     
+    </div>
+
+</ng-template>   
+
+<ng-template #confirmDeleteDependencia let-c="close" let-d="dismiss">
+
+    <div class="modal-header py-2">
+        <h4 class="modal-title lead">Mensaje de confirmación <i class="fas fa-exclamation-circle text-secondary  "></i> </h4>
+        <button type="button" class="close" aria-label="Close" (click)="d('Cross click')">
+        <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <div class="modal-body py-3">
+        <!-- <div class="text-muted lighter h5"> Estás a punto de 
+            <strong class="text-danger" >Eliminar</strong>
+             esta Dependencia, estas seguro de hacerlo ?
+        </div> -->
+        <div class="d-flex justify-content-end">
+            <div>
+                <button type="button" (click)="d('Cross click')" 
+                    class="btn btn-sm btn-outline-secondary rounded-0">CANCELAR</button>
+                <button type="submit" (click)="eliminarDependencia()" 
+                    class="btn btn-sm btn-outline-danger rounded-0 ">ELIMINAR DEPENDENCIA</button>
+            </div>
+        </div>     
+    </div>
+
+</ng-template>   

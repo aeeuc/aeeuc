@@ -1,0 +1,99 @@
+
+th{
+    border-bottom: 0 !important;
+}
+
+.leyend{
+    p{
+        margin-bottom: 0;
+    }
+}
+
+.breadcrumb-item{
+    a{
+        opacity: 0.7;        
+        &:hover{
+            cursor: pointer;
+            opacity: 1;
+        }
+    }    
+}
+
+.cursor{
+    cursor: pointer;
+}
+
+.routerLink{
+    text-decoration-line: none
+}
+
+
+.drop{
+    &:hover{
+        color: #dc3545;
+    }
+}
+
+input{
+    border-radius: 0;
+}
+
+.actionEdit{
+    color: #17a2b8;
+    &:hover{
+        color: #0f6875;
+    }
+}
+
+#up{
+    position: fixed;
+    bottom: 50px; 
+    right: 50px;
+    display: none;
+    font-size: 4rem;
+    color: #333;
+    cursor: pointer;
+}
+
+.dep{
+    &:first-child{
+        border-top: 0;
+    }
+
+}
+
+
+.textorojo{
+    color: red !important;
+}
+
+// ===============================================
+// PENDIENTE CON ESTO
+.universidad-carabobo{
+    text-shadow: 2px 2px 6px black
+}
+.section-title{
+    text-shadow: 4px 0px 0px #62839e;
+}
+
+.selected-dep{
+
+    // svg{
+    //     color: #17a2b8 !important;
+    // }
+
+   background-color: #dae0e5 !important;
+    // color: #ffffff !important;
+   
+}
+
+// #17a2b8
+
+#lbe-indicadores{
+    div{
+        input{
+            padding: 0;
+            padding-left: 1rem;
+        }
+    }
+}

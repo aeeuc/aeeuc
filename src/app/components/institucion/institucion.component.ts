@@ -1,0 +1,400 @@
+import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+
+
+import { Dependencia } from '../../classes/dependencia';
+import { Institucion } from '../../classes/institucion';
+import { Factura } from '../../classes/factura';
+
+import { DependenciaService } from '../../services/dependencia.service';
+import { InstitucionService } from '../../services/institucion.service';
+import { FacturadoService } from '../../services/facturado.service';
+import { UsuarioService } from '../../services/usuario.service';
+
+import { FormGroup, FormBuilder, Validators, FormControl } from '@angular/forms';
+
+import { NgbModalRef, NgbModal } from '@ng-bootstrap/ng-bootstrap';
+
+@Component({
+  selector: 'app-institucion',
+  templateUrl: './institucion.component.html',
+  styleUrls: ['./institucion.component.scss']
+})
+export class InstitucionComponent implements OnInit {
+
+
+  userActive = ''
+  institucion_activa: Institucion = new Institucion('', '', '', '', '')
+  dependencia_activa: Dependencia = new Dependencia( '', '' , '' , 0 , 0 , [], '' , '' , '' , [], [], null, [], [] )
+
+
+  lista_dependencias: Dependencia[] = []
+  area_util_total = 0
+  area_brutal_total = 0
+  lbe_total = 0
+
+  // formgroup nueva dependencia
+  fomulario_nueva_dependencia: FormGroup
+  fomulario_agregar_factura: FormGroup
+
+  // modales
+  modal_nueva_dependencia: NgbModalRef
+  modal_agregar_factura: NgbModalRef
+  modal_confirm_delete_factura: NgbModalRef
+  modal_confirm_delete_dependencia: NgbModalRef
+
+  // ============================= GRAFICA DE BARRAS =======================================
+
+  public barChartLabels: string[] = ['Iluminación', 'Climatización', 'Tecnología',
+  'Laboratorio', 'Elevación', 'Cocina', 'Otros']
+  public barCharDataRef = []
+
+  public barChartData: any[] = [
+    {data: [], label: 'Series A'},
+    {data: [], label: 'Series B'}
+  ];
+
+  public barChartOptions: any = {  responsive: true }
+  public barChartType = 'bar'
+  public barChartLegend = true
+
+
+  // ============================= MODELO DE DATOS =======================================
+
+  // ==================================== VARIABLES DE CONTROL =================================
+
+  editar_factura = false
+  pos = -1
+
+  total_cargas_conectadas = 0
+  total_wh_por_semanas = 0
+
+  total_cargas_conectadas_plan = 0
+  total_wh_por_semanas_plan = 0
+
+
+  lineChartLabels = []
+  lineaCharData = [{data: [], label: 'Gráfica'}]
+
+
+
+  // ==========================================================================================
+
+  constructor(
+
+    private activatedRoute: ActivatedRoute,
+    private modalService: NgbModal,
+    private fb: FormBuilder,
+    private dependenciaService: DependenciaService,
+    private institucionService: InstitucionService,
+    private usuarioService: UsuarioService,
+    private facturadoService: FacturadoService ) {
+
+      this.usuarioService.chekUser().subscribe(inf => {
+        if (inf.auth) {
+          this.userActive = inf.user.nombre
+        } else {
+          console.log('no hay un usuario activo')
+          this.userActive = ''
+        }
+      })
+  }
+
+  ngOnInit() {
+
+    this.activatedRoute.params.subscribe(params => {
+
+      this.institucionService.getInstitucion(params['id_institucion']).subscribe((res: any) => {
+        this.institucion_activa = res.data
+      })
+
+      this.dependenciaService.allDependencia(params['id_institucion']).subscribe((res: any) => {
+        this.lista_dependencias = res.data
+
+        // ==============================================================
+        let lbe
+        this.lista_dependencias.forEach(element => {
+
+          this.area_util_total = this.area_util_total + element.area_util
+          this.area_brutal_total = this.area_brutal_total + element.area_bruta
+
+          lbe = 0
+          element.censo.forEach(carga => {
+            lbe = ( carga.numero * carga.fd * carga.horasDia * carga.diaSemana * carga.potencia) + lbe
+          })
+
+          lbe = ( lbe * 4.3) / 1000
+
+          this.lbe_total = this.lbe_total + lbe
+
+        });
+
+        // ==============================================================
+
+
+        if (params['id_dependecia']) {
+          // console.log('entre desde censo')
+          this.verDependencia(params['id_dependecia'])
+
+        } else {
+          // console.log('entre desde home')
+          if (this.lista_dependencias.length > 0) {
+            this.verDependencia(this.lista_dependencias[0]._id)
+          }
+        }
+
+      })
+
+    })
+
+  }
+
+  // events
+  public chartClicked(e: any): void {
+    console.log(e);
+  }
+
+  public chartHovered(e: any): void {
+    console.log(e);
+  }
+
+
+  ir(el: HTMLElement) {
+    el.scrollIntoView({behavior: 'smooth', block: 'start', inline: 'start' })
+  }
+
+  // ================================================================================
+
+  verDependencia(id: string) {
+    this.dependenciaService.getDependencia(id).subscribe((res: any) => {
+      this.dependencia_activa = res.data
+
+      // Calculo de totales del censo
+      if (this.dependencia_activa.censo.length > 0  ) {
+
+        this.total_cargas_conectadas = 0
+        this.total_wh_por_semanas = 0
+
+        this.total_cargas_conectadas_plan = 0
+        this.total_wh_por_semanas_plan = 0
+
+        // ================================================================================
+        const dataRef = []
+
+        this.dependencia_activa.lbe.forEach((element, index) => {
+
+          if (element > 0) {
+            dataRef.push(this.dependencia_activa.indicadores_lbe[index])
+          } else {
+            dataRef.push(0)
+          }
+        });
+        const newBarData = [
+          {data: this.dependencia_activa.lbe, label: 'LBE'},
+          {data: dataRef, label: 'LBE Referencia'}
+        ]
+
+        this.barChartData = newBarData
+
+        // ================================================================================
+
+        this.dependencia_activa.censo.forEach(carga => {
+          this.total_cargas_conectadas = ( carga.numero * carga.potencia ) + this.total_cargas_conectadas
+          this.total_wh_por_semanas =
+          ( carga.numero * carga.fd * carga.horasDia * carga.diaSemana * carga.potencia) + this.total_wh_por_semanas
+        })
+
+        this.dependencia_activa.plan.forEach(carga => {
+          this.total_cargas_conectadas_plan = ( carga.numero * carga.potencia ) + this.total_cargas_conectadas_plan
+          this.total_wh_por_semanas_plan =
+          ( carga.numero * carga.fd * carga.horasDia * carga.diaSemana * carga.potencia) + this.total_wh_por_semanas_plan
+        })
+
+
+
+      } else {
+
+        this.total_cargas_conectadas = 0
+        this.total_wh_por_semanas = 0
+
+        this.total_cargas_conectadas_plan = 0
+        this.total_wh_por_semanas_plan = 0
+
+        this.barChartData =  [
+          {data: [], label: 'LBE'},
+          {data: [], label: 'LBE Referencia'}
+        ]
+      }
+
+      // Ciclos de Carga Grafica
+      const label = []
+
+      if (this.dependencia_activa.ciclo) {
+        this.dependencia_activa.ciclo.invtervalo.forEach(element => {
+          const horas = Math.trunc(element)
+          let minutos: any = '00'
+          if ( (element % 1) > 0 ) { minutos = 30 }
+          label.push(`${horas}:${minutos}`)
+        })
+
+        // console.log(label)
+        this.lineChartLabels = label
+        this.lineaCharData[0].data = this.dependencia_activa.ciclo.valores
+      }
+
+
+    })
+
+  }
+
+
+  // ================================================================================
+
+  open_agregar_factura(content) {
+    this.fomulario_agregar_factura = this.fb.group({
+      fecha :           ['', Validators.required],
+      numero_factura :  ['', Validators.required],
+      kwh :             [ Validators.required ],
+      kva :             [ Validators.required ],
+      tarifa :          [ Validators.required ],
+      monto :           [ Validators.required ],
+    })
+    // this.modal = this.modalService.open(newUserModal, { backdrop:'static' , keyboard:false, size: 'lg'} )
+    this.modal_agregar_factura = this.modalService.open(
+      content, { backdrop: 'static' , keyboard: false, windowClass: 'newUser-modal'}
+    )
+  }
+
+  open_agregar_dependencia(content) {
+    this.fomulario_nueva_dependencia = this.fb.group({
+      nombre:             ['', Validators.required],
+      area_util:          [ Validators.required, Validators.min(0)],
+      area_bruta:         [ Validators.required, Validators.min(0)],
+      indicadores_lbe:    this.fb.array([
+        new FormControl('', [Validators.required, Validators.min(0)] ),
+        new FormControl('', [Validators.required, Validators.min(0)] ),
+        new FormControl('', [Validators.required, Validators.min(0)] ),
+        new FormControl('', [Validators.required, Validators.min(0)] ),
+        new FormControl('', [Validators.required, Validators.min(0)] ),
+        new FormControl('', [Validators.required, Validators.min(0)] ),
+        new FormControl('', [Validators.required, Validators.min(0)] )
+
+      ]) ,
+      compania_electrica: ['', Validators.required],
+      nic:                ['', Validators.required],
+      numero_medidor:     ['', Validators.required]
+    })
+    // this.modal = this.modalService.open(newUserModal, { backdrop:'static' , keyboard:false, size: 'lg'} )
+    this.modal_nueva_dependencia = this.modalService.open(
+      content, { backdrop: 'static' , keyboard: false, windowClass: 'newUser-modal' }
+    )
+  }
+
+  // ================================================================================
+
+  submitFactura() {
+
+    if (this.fomulario_agregar_factura.valid) {
+
+      const newFactura: Factura = this.fomulario_agregar_factura.value
+
+      this.dependencia_activa.facturado.push(newFactura)
+
+      this.facturadoService.addFactura(this.dependencia_activa).subscribe(res => {
+        console.log(res)
+      })
+
+    }
+
+    this.modal_agregar_factura.close()
+
+  }
+
+  submitDependencia() {
+
+    const value = this.fomulario_nueva_dependencia.value
+
+    // isValid form
+    if (this.fomulario_nueva_dependencia.valid) {
+
+      const newDependencia: Dependencia = new Dependencia(
+        '',
+        this.institucion_activa._id,
+        value.nombre,
+        value.area_util,
+        value.area_bruta,
+        value.indicadores_lbe,
+        value.compania_electrica,
+        value.nic,
+        value.numero_medidor,
+        [], [], null, [], []
+      )
+      console.log(newDependencia)
+      this.dependenciaService.addDependencia(newDependencia).subscribe(res => {
+        this.lista_dependencias.push(res.data)
+      })
+
+    }
+
+    this.fomulario_nueva_dependencia.reset()
+
+    this.modal_nueva_dependencia.close()
+
+  }
+
+  open_confirm_delete_factura(content, value) {
+    this.pos = value
+    // this.modal = this.modalService.open(newUserModal, { backdrop:'static' , keyboard:false, size: 'lg'} )
+    this.modal_confirm_delete_factura = this.modalService.open(
+      content, { backdrop: 'static' , keyboard: false, windowClass: 'confirmDelete'}
+    )
+  }
+
+  eliminarFactura() {
+
+    this.modal_confirm_delete_factura.close()
+    // console.log(this.pos)
+
+
+    this.dependencia_activa.facturado.splice(this.pos, 1)
+
+    this.facturadoService.eliminarFactura(this.dependencia_activa).subscribe(res => {
+      console.log(res)
+    })
+
+
+    this.pos = -1
+
+  }
+
+  open_confirm_delete_dependencia(content) {
+    this.modal_confirm_delete_dependencia = this.modalService.open(
+      content, { backdrop: 'static' , keyboard: false, windowClass: 'confirmDelete'}
+    )
+  }
+
+  eliminarDependencia() {
+
+    // REVISAR ESTO PARA DARLE UNA MEJOR SOLUCION! ESTA ESTÁ MUY
+    // PARCHEADA !!!!!!!
+
+
+    this.dependenciaService.killDependencia(this.dependencia_activa._id).subscribe(res => {
+      console.log(res)
+
+    })
+    this.modal_confirm_delete_dependencia.close()
+
+    history.pushState(null, '', `/institucion/${this.dependencia_activa.id_institucion}`)
+    // history.pushState(null,'',`/aeeuc/institucion/${this.dependencia_activa.id_institucion}`)
+
+    // this.router.navigate(['/institucion', this.dependencia_activa.id_institucion ])
+    location.reload()
+  }
+
+  session(useractive) {
+    this.userActive = useractive
+  }
+
+
+}
