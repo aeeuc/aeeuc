@@ -385,8 +385,8 @@ export class InstitucionComponent implements OnInit {
     })
     this.modal_confirm_delete_dependencia.close()
 
-    history.pushState(null, '', `/institucion/${this.dependencia_activa.id_institucion}`)
-    // history.pushState(null,'',`/aeeuc/institucion/${this.dependencia_activa.id_institucion}`)
+    //history.pushState(null, '', `/institucion/${this.dependencia_activa.id_institucion}`)
+    history.pushState(null,'',`/aeeuc/institucion/${this.dependencia_activa.id_institucion}`)
 
     // this.router.navigate(['/institucion', this.dependencia_activa.id_institucion ])
     location.reload()
